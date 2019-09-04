@@ -29,6 +29,8 @@
 
 (in-package :cram-pr2-shopping-demo)
 
+
+
 (defun spawn-shelf ()
   (let ((shelve-urdf
           (cl-urdf:parse-urdf
@@ -83,33 +85,33 @@
 
 (defun place-objects ()
   (btr-utils:move-object :dove '((-1 -1.06 0.7) (0 0 0 1)))
-  (btr-utils:move-object :heitmann '((-1.3 -1.1 1) (0 0 0 1)))
-  (btr-utils:move-object :denkmit '((-2 -1.1 1.3) (0 0 0 1)))
+  (btr-utils:move-object :heitmann '((-1.3 -1.04 1) (0 0 0 1)))
+  (btr-utils:move-object :denkmit '((-2 -1.04 1.3) (0 0 0 1)))
   (btr:simulate btr:*current-bullet-world* 10))
 
 (defun replace-denkmit ()
   (cram-occasions-events:on-event
    (make-instance 'cpoe:object-detached-robot
      :arm :right
-     :object-name 'denkmit))
-  (btr-utils:move-object 'denkmit '((-2 -1.1 1.3) (0 0 0 1))))
+     :object-name :denkmit))
+  (btr-utils:move-object :denkmit '((-2 -1.1 1.3) (0 0 0 1))))
 
 (defun replace-dove ()
   (cram-occasions-events:on-event
    (make-instance 'cpoe:object-detached-robot
      :arm :left
-     :object-name 'dove))
-  (btr-utils:move-object 'dove '((-1 -1.1 0.7) (0 0 0 1))))
+     :object-name :dove))
+  (btr-utils:move-object :dove '((-1 -1.1 0.7) (0 0 0 1))))
 
 (defun replace-heitmann ()
   (cram-occasions-events:on-event
    (make-instance 'cpoe:object-detached-robot
      :arm :left
-     :object-name 'heitmann))
-  (btr-utils:move-object 'heitmann '((-1.3 -1.1 1) (0 0 0 1))))
+     :object-name :heitmann))
+  (btr-utils:move-object :heitmann '((-1.3 -1.1 1) (0 0 0 1))))
 
 (defun init ()
-  (roslisp:start-ros-node "shopping_demo")
+  ;; (roslisp:start-ros-node "shopping_demo")
 
   (cram-bullet-reasoning-belief-state::ros-time-init)
   (cram-location-costmap::location-costmap-vis-init)
@@ -124,6 +126,11 @@
                    (assert (btr:object ?world :static-plane :floor ((0 0 0) (0 0 0 1))
                                                             :normal (0 0 1) :constant 0))))
   (btr:add-objects-to-mesh-list "cram_pr2_shopping_demo"))
+
+(roslisp-utilities:register-ros-init-function init)
+(roslisp-utilities:register-ros-init-function spawn-robot)
+(roslisp-utilities:register-ros-init-function spawn-shelf)
+(roslisp-utilities:register-ros-init-function spawn-and-place-objects)
 
 (def-fact-group costmap-metadata (costmap:costmap-size
                                     costmap:costmap-origin
