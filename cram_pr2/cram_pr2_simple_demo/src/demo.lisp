@@ -31,12 +31,12 @@
 (in-package :cram-pr2-simple-demo)
 
 (defun demo()
-  (let ((object-types '( :bowl :milk :spoon))
-        (grasps '( :top :front :top))
-        (target-poses '(;;((-0.9 0.95 1.05) (0 0 0 1))
+  (let ((object-types '(:cereal :bowl :milk :spoon))
+        (grasps '(:front :top :front :top))
+        (target-poses '(((-0.95 0.95 1.05) (0 0 0 1))
                        ((-0.75 1.2 0.9) (0 0 0 1))
-                       ((-0.9 1 1.1) (0 0 0 1))
-                       ((-1 1 1.15) (0 0 0 1))))
+                       ((-0.75 1 1) (0 0 0 1))
+                       ((-0.75 1.3 0.85) (0 0 1 0))))
         (?init-pose (cl-transforms-stamped:make-pose-stamped
                      "map" 0
                      (cl-transforms:make-3d-vector 0.75 0.9 0)
@@ -54,14 +54,15 @@
               (type going)
               (pose ?init-pose)))
 
-    (loop for i from 0 to 4
+    (loop for i from 0 to 3
           do (let ((target-pose (cram-tf:list->pose (nth i target-poses))))
                (move-object (nth i object-types) target-pose (nth i grasps))
 
                (exe:perform
                 (desig:a motion
                          (type going)
-                         (pose ?init-pose)))))
+                         (pose ?init-pose))))
+             (robot-state-changed))
     
 
     )
@@ -82,39 +83,34 @@
             (type looking)
             (pose ?looking-pose)))
   
-  (let* ((?obj-det
-          (exe:perform
-           (desig:a motion
-                    (type detecting)
-                    (object (desig:an object
-                                      (type ?object-type))))))
-         (?pick-up-desig
-           (desig:an action
-                     (type picking-up)
-                     ;;(arm :right)
-                     (grasp ?grasp)
-                     (object ?obj-det)))
+    (let* ((?obj-det
+             (exe:perform
+              (desig:a motion
+                       (type detecting)
+                       (object (desig:an object
+                                         (type ?object-type)))))))
+      (exe:perform
+        (desig:an action
+                       (type picking-up)
+                       ;;(arm :right)
+                       (grasp ?grasp)
+                       (object ?obj-det)))
+      
+      (exe:perform
+       (desig:a motion
+                (type going)
+                (pose ?table-pose)))
 
-         (?place-desig
-            (desig:an action
-               (type placing)
-               (object ?obj-det)
-               (target (desig:a location
-                                (pose ?target))))))
-    
-    (exe:perform
-     ?pick-up-desig)
-    
-    (exe:perform
-     (desig:a motion
-              (type going)
-              (pose ?table-pose)))
+      (exe:perform
+        (desig:an action
+                       (type placing)
+                       (object ?obj-det)
+                       (target (desig:a location
+                                        (pose ?target)))))
+      
+      (robot-state-changed))))
 
-    (exe:perform
-     ?place-desig)
 
-    (robot-state-changed)
-    )))
 (defun robot-state-changed ()
   (cram-occasions-events:on-event
    (make-instance 'cram-plan-occasions-events:robot-state-changed)))
