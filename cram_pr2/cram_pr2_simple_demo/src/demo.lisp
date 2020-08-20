@@ -62,12 +62,8 @@
                 (desig:a motion
                          (type going)
                          (pose ?init-pose))))
-             (robot-state-changed))
-    
-
-    )
-    )
-  )
+             x
+             (robot-state-changed)))))
 
 (defun move-object (?object-type ?target ?grasp)
   (let ((?looking-pose (cl-transforms-stamped:make-pose-stamped
