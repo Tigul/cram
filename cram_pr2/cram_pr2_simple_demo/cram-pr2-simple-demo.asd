@@ -44,6 +44,7 @@
                cram-object-knowledge
                cram-manipulation-interfaces
                cram-mobile-pick-place-plans
+               cram-fetch-deliver-plans
 
                cram-bullet-reasoning
                cram-bullet-reasoning-belief-state

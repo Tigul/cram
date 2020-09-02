@@ -75,12 +75,19 @@
   (let ((cereal-pose '((1.48 0.7 0.93) (0 0 1 0)))
         (bowl-pose '((1.46 0.85 0.9) (0 0 0 1)))
         (milk-pose '((1.4 0.97 0.93) (0 0 1 0)))
-        (spoon-pose '((1.45 0.6 0.87) (0 0 0 1))))
+        (spoon-pose '(((1.45 0.95 0.75) (0 0 0 1))
+                      ((1.45 0.95 0.45) (0 0 0 1))
+                      ((1.45 0.95 0.25) (0 0 0 1))))
+        (drawer-choice (random 3))
+        (drawer-link '("sink_area_left_upper_drawer_main"
+                       "sink_area_left_middle_drawer_main"
+                       "sink_area_left_bottom_drawer_main")))
     (btr-utils:spawn-object :cereal :cereal :pose cereal-pose)
     (btr-utils:spawn-object :bowl :bowl :pose bowl-pose)
     (btr-utils:spawn-object :milk :milk :pose milk-pose)
-    (btr-utils:spawn-object :spoon :spoon :pose spoon-pose))
-  )
+    (btr-utils:spawn-object :spoon :spoon :pose (nth drawer-choice spoon-pose))
+  (btr:attach-object (btr:get-environment-object) (btr:object btr:*current-bullet-world* :spoon) :link (nth drawer-choice drawer-link))
+  ))
 
 (roslisp-utilities:register-ros-init-function init)
 (roslisp-utilities:register-ros-init-function spawn-kitchen)

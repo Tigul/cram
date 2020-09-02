@@ -36,7 +36,7 @@
         (target-poses '(((-0.95 0.95 1.05) (0 0 0 1))
                        ((-0.75 1.2 0.9) (0 0 0 1))
                        ((-0.75 1 1) (0 0 0 1))
-                       ((-0.75 1.3 0.85) (0 0 1 0))))
+                       ((-0.95 1.2 0.85) (0 0 1 0))))
         (?init-pose (cl-transforms-stamped:make-pose-stamped
                      "map" 0
                      (cl-transforms:make-3d-vector 0.75 0.9 0)
@@ -62,7 +62,6 @@
                 (desig:a motion
                          (type going)
                          (pose ?init-pose))))
-             x
              (robot-state-changed)))))
 
 (defun move-object (?object-type ?target ?grasp)
@@ -80,15 +79,23 @@
             (pose ?looking-pose)))
   
     (let* ((?obj-det
-             (exe:perform
-              (desig:a motion
-                       (type detecting)
-                       (object (desig:an object
-                                         (type ?object-type)))))))
+             (if (not (equalp ?object-type :spoon))
+                 (exe:perform
+                  (desig:a motion
+                           (type detecting)
+                           (object (desig:an object
+                                             (type ?object-type)))))
+                 (search-for-spoon)))
+
+           
+           (obj-x (cl-transforms:x (cl-transforms:origin (car (cdr (car (desig:desig-prop-value ?obj-det :pose)))))))
+           (?arm (if (< obj-x 0)
+                     :left
+                     :right)))
       (exe:perform
         (desig:an action
                        (type picking-up)
-                       ;;(arm :right)
+                       (arm ?arm)
                        (grasp ?grasp)
                        (object ?obj-det)))
       
@@ -105,6 +112,68 @@
                                         (pose ?target)))))
       
       (robot-state-changed))))
+
+(defun search-for-spoon ()
+  (let ((drawers '(sink-area-left-upper-drawer-main sink-area-left-middle-drawer-main sink-area-left-bottom-drawer-main))
+        (?looking-pose (cl-transforms-stamped:make-pose-stamped
+                        "map" 0
+                        (cl-transforms:make-3d-vector 1.3 0.85 0.45)
+                        (cl-transforms:make-identity-rotation)))
+        (?det-obj)
+        (?det-pose (cl-transforms-stamped:make-pose-stamped
+                    "map" 0
+                    (cl-transforms:make-3d-vector 0.55 1 0)
+                    (cl-transforms:make-identity-rotation))))
+    (loop for ?name in drawers
+          do 
+             (exe:perform
+              (desig:an action
+                        (type accessing)
+                        (location (desig:a location
+                                           (in (desig:an object
+                                                         (type drawer)
+                                                         (urdf-name ?name)
+                                                         (part-of iai-kitchen)))))
+                        (distance 0.3)
+                        (arm :left)))
+
+              (exe:perform
+               (desig:an action
+                         (type positioning-arm)
+                         (left-configuration park)
+                         (right-configuration park)))
+             
+             (exe:perform
+              (desig:a motion
+                       (type going)
+                       (pose ?det-pose)))
+
+                        
+             (setf (btr:joint-state (btr:get-robot-object) "torso_lift_joint") 0.25)
+             (exe:perform
+              (desig:a motion
+                       (type looking)
+                       (pose ?looking-pose)))
+
+             (cpl:with-failure-handling
+                 ((cram-common-failures:perception-object-not-found (e)
+                    (exe:perform
+                     (desig:an action
+                               (type sealing)
+                               (location (desig:a location
+                                                  (in (desig:an object
+                                                                (type drawer)
+                                                                (urdf-name ?name)
+                                                                (part-of iai-kitchen)))))))
+                    (return)))
+
+               (setf ?det-obj (exe:perform
+                               (desig:a motion
+                                        (type detecting)
+                                        (object (desig:an object
+                                                          (type :spoon)))))))
+             (if (not (eql ?det-obj NIL))
+                 (return ?det-obj)))))
 
 
 (defun robot-state-changed ()
